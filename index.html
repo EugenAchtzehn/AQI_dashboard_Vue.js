@@ -164,10 +164,25 @@
                             (element, index) => countyAry.indexOf(element) === index
                         );
                         // 排除 countyAry 中重複的元素，只保留第一個
-                    });
 
-                    vm.starList = JSON.parse(localStorage.marked);
-                    // 取出先前關注的測站，加到關注陣列內
+                        if (localStorage.marked) {
+                            // 如果 localStorage 可以取到紀錄
+                            vm.starList = JSON.parse(localStorage.marked);
+                            // 取出先前關注的測站，加到關注陣列內
+
+                            console.log(vm.epaData);
+                            vm.epaData.forEach((element, index, arr) => {
+                                console.log("executed!");
+                                for (let i = 0; i < vm.starList.length; i++) {
+                                    if (element.SiteId === vm.starList[i].SiteId) {
+                                        element.isStar = true;
+                                    }
+                                }
+                            });
+                            // 比對 starList 與 epaData 的成員
+                            // 重覆者將 epaData 的 isStar 狀態從 false 改成 true
+                        }
+                    });
                 },
                 // API 來源
                 // https://opendata.epa.gov.tw/Data/Contents/AQI/
