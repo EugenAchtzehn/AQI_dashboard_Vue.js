@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>AQI dashboard by Vue.js</title>
+        <link
+            rel="stylesheet"
+            href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+            integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+            crossorigin="anonymous"
+        />
+        <script
+            defer
+            src="https://use.fontawesome.com/releases/v5.0.8/js/solid.js"
+            integrity="sha384-+Ga2s7YBbhOD6nie0DzrZpJes+b2K1xkpKxTFFcx59QmVPaSA8c7pycsNaFwUK6l"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            defer
+            src="https://use.fontawesome.com/releases/v5.0.8/js/regular.js"
+            integrity="sha384-t7yHmUlwFrLxHXNLstawVRBMeSLcXTbQ5hsd0ifzwGtN7ZF7RZ8ppM7Ldinuoiif"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            defer
+            src="https://use.fontawesome.com/releases/v5.0.8/js/fontawesome.js"
+            integrity="sha384-7ox8Q2yzO/uWircfojVuCQOZl+ZZBg2D2J5nkpLqzH1HY0C1dHlTKIbpRz/LG23c"
+            crossorigin="anonymous"
+        ></script>
+        <script
+            src="https://code.jquery.com/jquery-3.6.0.js"
+            integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+    </head>
+    <body>
+        <div id="app" class="p-5">
+            <select
+                name="select"
+                id="select"
+                class="form-control mb-3"
+                v-model="filter"
+                @change="toSelectCounty"
+            >
+                <!-- 輸出雙向綁定於 root 的資料下的 filter -->
+                <option value="" disabled>--- 請選擇城市 ---</option>
+                <option v-for="county in location">{{county}}</option>
+            </select>
+            <h4>關注測站列表</h4>
+            <div class="card-columns">
+                <station-card
+                    v-for="(starStn, index) in starList"
+                    :key="starStn.SiteId"
+                    :stn-prop="starList[index]"
+                    @starclick="starObjOut"
+                ></station-card>
+            </div>
+
+            <hr />
+            <h4>縣市測站列表</h4>
+            <div class="card-columns">
+                <station-card
+                    v-for="(station, index) in stationFiltered"
+                    :key="station.isStar"
+                    :stn-prop="stationFiltered[index]"
+                    @starclick="starObjOut"
+                ></station-card>
+                <!-- v-for 是看 :key 綁定的值是否改變，以決定是否重新渲染
+                    所以在此綁定會因 click 觸發而改變的 isStar 布林值 -->
+            </div>
+        </div>
+
+        <script type="text/x-template" id="stnCard">
+            <div class="card" :class="aqiLevel">
+              <div class="card-header">{{stnProp.County}} - {{stnProp.SiteName}}
+                <a href="#" class="float-right" @click.prevent="isStarToggle">
+                    <span v-show="!stnProp.isStar"><i class="far fa-star"></i></span>
+                    <span v-show="stnProp.isStar"><i class="fas fa-star"></i></span>
+                </a>
+                <!-- 以事件切換資料時，DOM 元素的內部必須要有使用此資料的部分，否則 Vue 會偷懶 -->
+                <!-- fontawesome 只抓一次，所以初始化時就必須載入不同樣式，以 v-show 來控制隱藏或顯示
+                而 v-if 會摧毀整個 DOM，造成無法順利切換的狀況  -->
+                <!-- 按此連結觸發事件，將此測站設為關注，同時 i 的樣式轉為 "fas fa-star" -->
+              </div>
+              <div class="card-body">
+                <ul class="list-unstyled">
+                  <li>AQI 指數: {{stnProp.AQI}}</li>
+                  <li>PM2.5: {{stnProp['PM2.5']}}</li>
+                  <li>說明: {{stnProp.Status}}</li>
+                </ul>
+                {{stnProp.PublishTime}}
+              </div>
+            </div>
+        </script>
+
+        <script>
+            Vue.component("station-card", {
+                template: "#stnCard",
+                props: ["stnProp"],
+                computed: {
+                    aqiLevel() {
+                        const airStatus = this.stnProp.Status;
+                        if (airStatus === "良好") {
+                            return "status-aqi1";
+                        } else if (airStatus === "普通") {
+                            return "status-aqi2";
+                        } else if (airStatus === "對敏感族群不健康") {
+                            return "status-aqi3";
+                        } else if (airStatus === "對所有族群不健康") {
+                            return "status-aqi4";
+                        } else if (airStatus === "非常不健康") {
+                            return "status-aqi5";
+                        } else if (airStatus === "危害") {
+                            return "status-aqi6";
+                        } else {
+                            return "";
+                            // 沒資料的狀況
+                        }
+                    },
+                },
+                methods: {
+                    isStarToggle() {
+                        // console.log(this.stnProp.SiteName + "clicked!");
+                        this.stnProp.isStar = !this.stnProp.isStar;
+                        // 把 root 紀錄上是否為關注的布林值更改後丟回
+                        this.$emit("starclick", this.stnProp);
+                        // 使用 emit 傳出這個要被關注的測站
+                    },
+                },
+            });
+
+            var app = new Vue({
+                el: "#app",
+                data: {
+                    epaData: [],
+                    stationFiltered: [],
+                    location: [],
+                    starList: [],
+                    filter: "",
+                },
+                created() {
+                    // created 階段即使用 AJAX 撈資料
+                    const vm = this;
+                    const api = "http://opendata2.epa.gov.tw/AQI.json";
+
+                    // 使用 jQuery ajax
+                    $.get(api).then(function (response) {
+                        vm.epaData = response;
+                        //console.log(response);
+
+                        vm.epaData.forEach((element) => {
+                            element.isStar = false;
+                        });
+                        // 對每個測站加上一個初始值，記錄標註狀況
+
+                        const countyAry = vm.epaData.map((element) => element.County);
+                        // 取出測站的所在地點，為陣列 countyAry
+
+                        vm.location = countyAry.filter(
+                            (element, index) => countyAry.indexOf(element) === index
+                        );
+                        // 排除 countyAry 中重複的元素，只保留第一個
+                    });
+                },
+                // API 來源
+                // https://opendata.epa.gov.tw/Data/Contents/AQI/
+
+                methods: {
+                    toSelectCounty() {
+                        const vm = this;
+                        vm.stationFiltered = vm.epaData.filter((stnObj) => {
+                            return stnObj.County === vm.filter;
+                        });
+                        // 對 <select> 設定 change 事件觸動此方法
+                        // 將符合 .County 符合 filter 的測站加到 stationFiltered 中
+                    },
+                    starObjOut(obj) {
+                        // console.log(objOut);
+                        if (obj.isStar) {
+                            this.starList.push(obj);
+                        }
+                        // 當原本非關注測站轉為關注時，在 starList 陣列增加此測站
+                        else {
+                            this.starList.forEach((element, index, arr) => {
+                                if (element.SiteId === obj.SiteId) {
+                                    arr.splice(index, 1);
+                                }
+                            });
+                        }
+                        // 當原本已關注測站轉為不關注時，在 starList 刪除此測站
+                    },
+                },
+            });
+        </script>
+
+        <!-- 狀態對應表
+        '良好',
+        'status-aqi2' '普通',
+        'status-aqi3' '對敏感族群不健康',
+        'status-aqi4' '對所有族群不健康',
+        'status-aqi5' '非常不健康',
+        'status-aqi6' '危害' -->
+
+        <style>
+            .status-aqi1 {
+                background-color: #ccff99;
+            }
+
+            .status-aqi2 {
+                background-color: #ffffcc;
+            }
+
+            .status-aqi3 {
+                background-color: #ff7e00;
+            }
+
+            .status-aqi4 {
+                background-color: #ff0000;
+            }
+
+            .status-aqi5 {
+                background-color: #8f3f97;
+                color: #ffffff;
+                /* 文字反白提升識別度 */
+            }
+
+            .status-aqi6 {
+                background-color: #7e0023;
+                color: #ffffff;
+                /* 文字反白提升識別度 */
+            }
+        </style>
+    </body>
+</html>
