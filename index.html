@@ -37,7 +37,7 @@
         <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
     </head>
     <body>
-        <div id="app" class="p-5">
+        <div id="app" class="container py-5">
             <select
                 name="select"
                 id="select"
@@ -165,6 +165,9 @@
                         );
                         // 排除 countyAry 中重複的元素，只保留第一個
                     });
+
+                    vm.starList = JSON.parse(localStorage.marked);
+                    // 取出先前關注的測站，加到關注陣列內
                 },
                 // API 來源
                 // https://opendata.epa.gov.tw/Data/Contents/AQI/
@@ -192,6 +195,9 @@
                             });
                         }
                         // 當原本已關注測站轉為不關注時，在 starList 刪除此測站
+
+                        localStorage.marked = JSON.stringify(this.starList);
+                        // 更新 starList 到 localStorage 上
                     },
                 },
             });
