@@ -123,7 +123,6 @@
                 },
                 methods: {
                     isStarToggle() {
-                        // console.log(this.stnProp.SiteName + "clicked!");
                         this.stnProp.isStar = !this.stnProp.isStar;
                         // 把 root 紀錄上是否為關注的布林值更改後丟回
                         this.$emit("starclick", this.stnProp);
@@ -150,7 +149,6 @@
                     // 使用 jQuery ajax
                     $.get(api).then(function (response) {
                         vm.epaData = response;
-                        //console.log(response);
 
                         vm.epaData.forEach((element) => {
                             element.isStar = false;
@@ -170,9 +168,7 @@
                             vm.starList = JSON.parse(localStorage.marked);
                             // 取出先前關注的測站，加到關注陣列內
 
-                            console.log(vm.epaData);
                             vm.epaData.forEach((element, index, arr) => {
-                                console.log("executed!");
                                 for (let i = 0; i < vm.starList.length; i++) {
                                     if (element.SiteId === vm.starList[i].SiteId) {
                                         element.isStar = true;
@@ -197,7 +193,6 @@
                         // 將符合 .County 符合 filter 的測站加到 stationFiltered 中
                     },
                     starObjOut(obj) {
-                        // console.log(objOut);
                         if (obj.isStar) {
                             this.starList.push(obj);
                         }
